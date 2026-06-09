@@ -6,7 +6,7 @@ JOSS open-source contribution model.
 ## Getting set up
 
 ```bash
-git clone https://github.com/<owner>/ai-mutation
+git clone https://github.com/souravchandra18/ai-mutation
 cd ai-mutation
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
