@@ -285,7 +285,7 @@ def reason(
         {"role": "assistant", "content": f"Stage 1:\n{stage1}\n\nStage 2:\n{stage2}"},
         {"role": "user", "content": STAGE_PROMPTS["therapy"]},
     ]
-    stage3, m3 = _chat(msgs, temperature=temperature, max_tokens=400,
+    stage3, m3 = _chat(msgs, temperature=temperature, max_tokens=900,
                        model=chosen_model, seed=seed)
     run_meta["stages"]["therapy"] = m3
 
