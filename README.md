@@ -27,7 +27,7 @@ slowest single source rather than their sum.
 
 The pipeline is genuinely multi-modal: a single `vllm serve` process hosts
 the reasoning LLM, and three specialist models run alongside it (in the
-FastAPI / Streamlit / notebook process) on the same ROCm GPU.
+FastAPI / Gradio / notebook process) on the same ROCm GPU.
 
 | Modality | Model (where it runs) | Output fed to the LLM |
 |---|---|---|
@@ -46,7 +46,7 @@ Key points:
   + 3-D backbone) when the chosen model is vision-capable
   (`Qwen/Qwen2.5-VL-7B-Instruct`, `OpenGVLab/InternVL3-8B`, etc.). Text-only
   models still receive the structural facts as JSON.
-- The Streamlit UI adds **file uploaders** for image and voice inputs and
+- The Gradio UI adds **file uploaders** for image and voice inputs and
   shows a **🧬 Structure** tab with the domain map and an interactive
   AlphaFold viewer (py3Dmol).
 - Skipped for variant classes where a single residue isn't meaningful
@@ -86,7 +86,7 @@ Aliases are automatically canonicalised to HGNC symbols (`HER2` → `ERBB2`, `EZ
 
 For a full cloud-only deployment on an AMD AI Developer Cloud GPU droplet, use
 [`AMD_AI_DEVELOPER_CLOUD_SETUP.md`](AMD_AI_DEVELOPER_CLOUD_SETUP.md). That guide
-runs vLLM, FastAPI, and Streamlit on the droplet, with your laptop used only as
+runs vLLM, FastAPI, and Gradio on the droplet, with your laptop used only as
 a browser.
 
 ### 1. Start an AMD-hosted LLM endpoint
@@ -170,7 +170,7 @@ AI_API_KEY=<your-amd-api-key>
 ```
 
 You can change the model in `.env` (`AI_MODEL`), pass `--model` on the CLI,
-or pick one from the **sidebar dropdown** in the Streamlit UI. Good AMD
+or pick one from the **model dropdown** in the Gradio UI. Good AMD
 Developer Cloud starting points:
 
 - `Qwen/Qwen2.5-7B-Instruct` *(good smoke-test model)*
@@ -204,7 +204,10 @@ Developer Cloud starting points:
 | `IMAGING_TOP_K` | `5` | Number of top label matches kept per image. |
 | `WHISPER_MODEL` | `openai/whisper-base` | Speech transcription model id. |
 | `WHISPER_ENABLED` | `1` | Set to `0` to skip Whisper entirely. |
-| `BACKEND_URL` | `http://localhost:8000` | Streamlit → FastAPI URL. |
+| `BACKEND_URL` | `http://localhost:8000` | Web UI → FastAPI URL. |
+| `GRADIO_HOST` | `0.0.0.0` | Bind address for the Gradio server. |
+| `GRADIO_PORT` | `8501` | TCP port for the Gradio server. |
+| `UI_FRAMEWORK` | `gradio` | Set to `streamlit` to launch the legacy Streamlit UI instead. |
 
 ## Usage
 
@@ -233,7 +236,11 @@ python -m src.cli evidence "BRCA1 c.5074+1G>A"
 python -m src.cli evidence "BCR::ABL1"
 ```
 
-### Web UI (Streamlit frontend + FastAPI backend)
+### Web UI (Gradio frontend + FastAPI backend)
+
+The primary frontend is **Gradio**, because Streamlit's websocket protocol is
+not supported inside the AMD AI Developer Cloud JupyterLab proxy. A legacy
+Streamlit app is still kept at `src/app.py` for local use.
 
 Open two terminals:
 
@@ -242,17 +249,23 @@ Open two terminals:
 uvicorn src.api:app --reload --port 8000
 # OpenAPI docs at http://localhost:8000/docs
 
-# Terminal 2 — frontend
-streamlit run src/app.py
+# Terminal 2 — frontend (Gradio, default)
+python -m src.gradio_app
 # UI at http://localhost:8501  (set BACKEND_URL env var to override)
+
+# Or use the helper script (UI_FRAMEWORK=streamlit selects the legacy UI):
+bash scripts/start_ui.sh
+UI_FRAMEWORK=streamlit bash scripts/start_ui.sh
 ```
 
-The sidebar exposes a **Model** dropdown (with a `Custom…` text-input escape
-hatch) so you can switch the configured model without restarting the backend.
-The result view includes an **At A Glance** table, a parsed therapy table when
-the model emits Markdown table output, and a **Trust & Evidence** tab with
-Citation-Grounding Score (CGS), citation counts, hallucination rate, source
-coverage, and run metadata.
+The Gradio UI exposes a **Settings** accordion with a backend health check, a
+live **Model** dropdown (with a `Custom…` text-input escape hatch) and a
+refresh button so you can switch the configured model without restarting the
+backend. The result view includes an **At A Glance** table, a parsed therapy
+table when the model emits Markdown table output, a **Trust & Evidence** tab
+with Citation-Grounding Score (CGS), citation counts, hallucination rate,
+source coverage, and run metadata, and a **🧬 Structure** tab with the domain
+map and an interactive AlphaFold viewer.
 
 ### AMD cloud helper scripts
 
@@ -268,7 +281,7 @@ This opens a tmux session with:
 ```text
 Pane 1: vLLM model server
 Pane 2: FastAPI backend
-Pane 3: Streamlit UI
+Pane 3: Gradio UI
 ```
 
 Individual scripts are also available:
@@ -348,14 +361,16 @@ src/
   reasoning.py      # 3-stage OpenAI-compatible LLM chain (multi-image mechanism stage)
   verification.py   # citation-grounding verifier (research-mode novelty)
   api.py            # FastAPI backend (uvicorn src.api:app)  — incl. /analyze_mm
-  app.py            # Streamlit frontend with image/voice uploaders + 3-D viewer
+  app.py            # Streamlit frontend (legacy; for local use only)
+  gradio_app.py     # Gradio frontend (primary; works in AMD JupyterLab)
+  structure_viewer.py # 3Dmol.js HTML builder shared by both frontends
   cli.py            # `python -m src.cli ...`  (supports --model/-m/--image/--voice)
 notebooks/
   multimodal_demo.ipynb  # cell-by-cell JupyterLab walk-through of the multimodal pipeline
 eval/               # research-mode benchmark harness (CIViC ground truth)
 tests/              # offline pytest suite (parser + verifier + classifier)
 paper/              # JOSS-style manuscript (paper.md + paper.bib)
-scripts/            # AMD cloud startup helpers for vLLM, FastAPI, Streamlit
+scripts/            # AMD cloud startup helpers for vLLM, FastAPI, Gradio
 AMD_CLOUD_SETUP.md  # cloud-only GPU droplet runbook
 ```
 

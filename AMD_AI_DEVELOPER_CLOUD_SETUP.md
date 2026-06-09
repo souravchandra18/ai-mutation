@@ -13,7 +13,7 @@ AMD GPU Droplet
   │         ESM-2          — protein language model (sequence modality)
   │         BiomedCLIP/CLIP— biomedical image encoder (vision modality)
   │         Whisper        — speech transcription (speech modality)
-  └─ Streamlit web UI       http://0.0.0.0:8501
+  └─ Gradio web UI          http://0.0.0.0:8501
 
 Your laptop
   └─ Browser opens          http://<droplet-public-ip>:8501
@@ -74,7 +74,7 @@ Open these inbound ports for the droplet:
 
 ```text
 22    SSH
-8501  Streamlit web UI
+8501  Gradio web UI
 ```
 
 Do not expose these publicly unless you specifically need to:
@@ -115,7 +115,7 @@ Use JupyterLab Terminal for long-running services.
 Use notebook cells only for quick checks.
 ```
 
-Do not start vLLM, FastAPI, or Streamlit from ordinary notebook cells unless you
+Do not start vLLM, FastAPI, or the Gradio UI from ordinary notebook cells unless you
 use background commands. A notebook cell stays busy while the server is running.
 The JupyterLab **Terminal** is the cleaner option.
 
@@ -149,7 +149,7 @@ Section 10: Make Startup Scripts Executable
 Section 11: Start All Services
 ```
 
-After the services start, open the Streamlit UI at:
+After the services start, open the Gradio UI at:
 
 ```text
 http://<droplet-public-ip>:8501
@@ -198,7 +198,10 @@ print(data["grounding"]["aggregate"])
 print(data["reasoning"]["mutation_summary"][:1000])
 ```
 
-The notebook test is optional. The main user interface is still Streamlit.
+The notebook test is optional. The main user interface is still the Gradio app
+at `src/gradio_app.py`. Gradio is used instead of Streamlit because the AMD AI
+Developer Cloud JupyterLab proxy does not support Streamlit's websocket
+protocol — Gradio uses plain HTTP / SSE and works through the proxy.
 
 ### Multimodal Demo Notebook
 
@@ -449,7 +452,7 @@ The project includes these helper scripts:
 ```text
 scripts/start_vllm.sh       starts the AMD ROCm vLLM model server
 scripts/start_backend.sh    starts the FastAPI backend
-scripts/start_ui.sh         starts the Streamlit UI
+scripts/start_ui.sh         starts the Gradio UI (set UI_FRAMEWORK=streamlit for legacy)
 scripts/start_all_tmux.sh   starts all three services in tmux
 ```
 
@@ -472,7 +475,7 @@ The tmux session has three panes:
 ```text
 Pane 1: vLLM model server
 Pane 2: FastAPI backend
-Pane 3: Streamlit frontend
+Pane 3: Gradio frontend
 ```
 
 The first vLLM run can take several minutes because Docker may pull the image
@@ -513,7 +516,7 @@ Expected response:
 {"status":"ok"}
 ```
 
-## 14. Confirm Streamlit Is Listening
+## 14. Confirm The Gradio UI Is Listening
 
 Run:
 
@@ -584,9 +587,9 @@ the AMD cloud portal to avoid using credits.
 
 ## 18. Troubleshooting
 
-### Browser Cannot Open Streamlit
+### Browser Cannot Open The Gradio UI
 
-Check that Streamlit is running:
+Check that the Gradio server is running:
 
 ```bash
 curl http://localhost:8501
@@ -594,13 +597,13 @@ curl http://localhost:8501
 
 Check that port `8501` is open in the droplet firewall/security settings.
 
-Make sure Streamlit was started with:
+Make sure the Gradio server was started with:
 
 ```bash
---server.address 0.0.0.0
+GRADIO_HOST=0.0.0.0
 ```
 
-### Backend Not Connected In Streamlit
+### Backend Not Connected In The Web UI
 
 Check FastAPI:
 
@@ -614,7 +617,7 @@ Check `.env`:
 BACKEND_URL=http://localhost:8000
 ```
 
-Restart Streamlit after changing `.env`.
+Restart the UI after changing `.env`.
 
 ### LLM Call Fails
 
@@ -688,7 +691,7 @@ Use this checklist:
 [ ] curl localhost:8090/v1/models works
 [ ] FastAPI is running on localhost:8000
 [ ] curl localhost:8000/health works
-[ ] Streamlit is running on 0.0.0.0:8501
+[ ] Gradio UI is running on 0.0.0.0:8501
 [ ] Browser opens http://<droplet-public-ip>:8501
 [ ] BRAF V600E analysis runs
 [ ] (optional) notebooks/multimodal_demo.ipynb runs end-to-end
@@ -710,7 +713,7 @@ analysis will fail. So the safest process is:
 Stop vLLM
 Start vLLM with the new model
 Update .env AI_MODEL
-Restart Streamlit
+Restart the Gradio UI
 Select the model in the UI
 ```
 
@@ -838,9 +841,9 @@ AI_BASE_URL=http://localhost:8090/v1
 BACKEND_URL=http://localhost:8000
 ```
 
-### Step 6: Restart Streamlit
+### Step 6: Restart The Gradio UI
 
-Move to the Streamlit pane.
+Move to the UI pane.
 
 Stop it:
 
@@ -919,7 +922,7 @@ Yes. After your setup is working, you should create a **snapshot** of the GPU dr
 ```text
 1. vLLM model server
 2. FastAPI backend
-3. Streamlit UI
+3. Gradio UI
 ```
 
 **Before Taking Snapshot**
@@ -948,7 +951,7 @@ Stop:
 ```text
 vLLM
 FastAPI
-Streamlit
+Gradio
 ```
 
 Then exit tmux:
@@ -960,7 +963,7 @@ exit
 Optional but recommended: confirm no app processes are running:
 
 ```bash
-ps aux | grep -E "vllm|uvicorn|streamlit"
+ps aux | grep -E "vllm|uvicorn|gradio"
 ```
 
 **Take Snapshot In AMD Cloud UI**

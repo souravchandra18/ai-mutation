@@ -22,10 +22,24 @@ fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-STREAMLIT_HOST="${STREAMLIT_HOST:-0.0.0.0}"
-STREAMLIT_PORT="${STREAMLIT_PORT:-8501}"
+# Pick the UI framework. Default is Gradio (works inside AMD AI Developer
+# Cloud JupyterLab); set UI_FRAMEWORK=streamlit to use the legacy app.
+UI_FRAMEWORK="${UI_FRAMEWORK:-gradio}"
+UI_HOST="${GRADIO_HOST:-${STREAMLIT_HOST:-0.0.0.0}}"
+UI_PORT="${GRADIO_PORT:-${STREAMLIT_PORT:-8501}}"
 
-echo "Starting Streamlit UI"
-echo "  url: http://<droplet-public-ip>:${STREAMLIT_PORT}"
+export GRADIO_HOST="$UI_HOST"
+export GRADIO_PORT="$UI_PORT"
+export STREAMLIT_HOST="$UI_HOST"
+export STREAMLIT_PORT="$UI_PORT"
 
-streamlit run src/app.py --server.address "$STREAMLIT_HOST" --server.port "$STREAMLIT_PORT"
+if [[ "$UI_FRAMEWORK" == "streamlit" ]]; then
+  echo "Starting Streamlit UI (legacy)"
+  echo "  url: http://<host>:${UI_PORT}"
+  exec streamlit run src/app.py --server.address "$UI_HOST" --server.port "$UI_PORT"
+else
+  echo "Starting Gradio UI"
+  echo "  url: http://<host>:${UI_PORT}"
+  exec python -m src.gradio_app
+fi
+

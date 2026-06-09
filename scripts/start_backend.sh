@@ -29,3 +29,4 @@ echo "Starting FastAPI backend"
 echo "  url: http://${BACKEND_HOST}:${BACKEND_PORT}"
 
 uvicorn src.api:app --host "$BACKEND_HOST" --port "$BACKEND_PORT"
+

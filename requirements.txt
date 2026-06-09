@@ -5,6 +5,10 @@ python-dotenv>=1.0.1,<2.0
 pydantic>=2.7.0,<3.0
 typer>=0.12.3,<1.0
 rich>=13.7.1,<14.0
+# Primary web UI — works inside the AMD AI Developer Cloud JupyterLab
+# proxy (Streamlit's websocket protocol is not supported there).
+gradio>=4.40.0,<6.0
+# Optional legacy Streamlit UI (src/app.py). Skip on AMD JupyterLab.
 streamlit>=1.36.0,<2.0
 tenacity>=8.3.0,<10.0
 fastapi>=0.111.0,<1.0
