@@ -314,6 +314,11 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
+Do not use `pip install --ignore-installed -r requirements.txt` for the app
+environment. It can upgrade shared system packages such as FastAPI, Starlette,
+protobuf, and cachetools past the versions expected by preinstalled AMD/vLLM
+packages.
+
 If Docker is not available in your AMD JupyterLab environment, also install
 vLLM into the virtual environment:
 
@@ -635,6 +640,55 @@ AI_MODEL=Qwen/Qwen2.5-7B-Instruct
 ```
 
 The value of `AI_MODEL` should match the model served by vLLM.
+
+### vLLM Fails With `PYDANTIC_V2` / FastAPI ImportError
+
+If Python vLLM mode prints an error like:
+
+```text
+ImportError: cannot import name 'PYDANTIC_V2' from 'fastapi._compat'
+```
+
+the Python environment used by the `vllm` command has an inconsistent FastAPI
+install. This usually happens after installing app dependencies into the
+global Python environment with `pip --ignore-installed`.
+
+Repair the package set, then rerun `bash scripts/start_vllm.sh`:
+
+```bash
+python3 -m pip uninstall -y fastapi starlette pydantic pydantic-core websockets
+python3 -m pip install --upgrade --force-reinstall \
+  'fastapi>=0.111,<0.116' 'starlette>=0.37.2,<1.0' \
+  'pydantic>=2.7,<=2.12.3' 'websockets>=13,<16'
+```
+
+If the same import error persists, stale files were left under
+`/usr/local/lib/python3.12/dist-packages`. Remove only these package folders and
+metadata, then reinstall:
+
+```bash
+rm -rf /usr/local/lib/python3.12/dist-packages/fastapi \
+  /usr/local/lib/python3.12/dist-packages/fastapi-*.dist-info \
+  /usr/local/lib/python3.12/dist-packages/starlette \
+  /usr/local/lib/python3.12/dist-packages/starlette-*.dist-info \
+  /usr/local/lib/python3.12/dist-packages/pydantic \
+  /usr/local/lib/python3.12/dist-packages/pydantic-*.dist-info \
+  /usr/local/lib/python3.12/dist-packages/pydantic_core \
+  /usr/local/lib/python3.12/dist-packages/pydantic_core-*.dist-info \
+  /usr/local/lib/python3.12/dist-packages/websockets \
+  /usr/local/lib/python3.12/dist-packages/websockets-*.dist-info
+python3 -m pip install --upgrade --force-reinstall \
+  'fastapi>=0.111,<0.116' 'starlette>=0.37.2,<1.0' \
+  'pydantic>=2.7,<=2.12.3' 'websockets>=13,<16'
+```
+
+If the image blocks writes to system Python packages, use:
+
+```bash
+python3 -m pip install --break-system-packages --upgrade --force-reinstall \
+  'fastapi>=0.111,<0.116' 'starlette>=0.37.2,<1.0' \
+  'pydantic>=2.7,<=2.12.3' 'websockets>=13,<16'
+```
 
 ### Docker Cannot Access GPU
 

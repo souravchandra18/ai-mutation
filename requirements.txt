@@ -2,7 +2,7 @@
 openai>=1.40.0,<2.0
 httpx>=0.27.0,<1.0
 python-dotenv>=1.0.1,<2.0
-pydantic>=2.7.0,<3.0
+pydantic>=2.7.0,<=2.12.3
 typer>=0.12.3,<1.0
 rich>=13.7.1,<14.0
 # Primary web UI — works inside the AMD AI Developer Cloud JupyterLab
@@ -11,9 +11,19 @@ gradio>=4.40.0,<6.0
 # Optional legacy Streamlit UI (src/app.py). Skip on AMD JupyterLab.
 streamlit>=1.36.0,<2.0
 tenacity>=8.3.0,<10.0
-fastapi>=0.111.0,<1.0
+# Keep FastAPI below the release line that selects Starlette 1.x. Some optional
+# observability packages still require Starlette <1.0.
+fastapi>=0.111.0,<0.116
 uvicorn[standard]>=0.30.0,<1.0
 numpy<=2.2
+
+# Shared dependency constraints. These prevent pip from resolving to 2026-era
+# major versions that are outside the bounds of Google/Hugging Face packages.
+cachetools>=2.0.0,<7.0
+protobuf>=3.20.2,<7.0.0,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5
+fsspec[http]>=2023.1.0,<=2025.9.0
+starlette>=0.37.2,<1.0.0
+websockets>=13.0,<16.0
 
 # Multi-modal structural layer (UniProt domain plot + AlphaFold 3-D viewer)
 matplotlib>=3.8.0,<4.0
