@@ -16,7 +16,7 @@ VLLM_IMAGE="${VLLM_IMAGE:-vllm/vllm-openai-rocm:latest}"
 VLLM_HOST_PORT="${VLLM_HOST_PORT:-8090}"
 VLLM_CONTAINER_PORT="${VLLM_CONTAINER_PORT:-8000}"
 VLLM_BACKEND="${VLLM_BACKEND:-auto}"
-VLLM_ARGS="${VLLM_ARGS:---gpu-memory-utilization 0.80 --max-model-len 8192}"
+VLLM_ARGS="${VLLM_ARGS:---gpu-memory-utilization 0.95 --max-model-len 8192}"
 
 HF_ARGS=()
 if [[ -n "${HF_TOKEN:-}" ]]; then
