@@ -49,5 +49,5 @@ else
 
   echo "Starting Gradio UI"
   echo "  url: http://<host>:${UI_PORT}"
-  exec python src/gradio_app.py
+  exec python -m src.gradio_app
 fi
