@@ -239,7 +239,7 @@ def reason(
 
     # Stage 1
     msgs = base_messages + [{"role": "user", "content": STAGE_PROMPTS["mutation_summary"]}]
-    stage1, m1 = _chat(msgs, temperature=temperature, max_tokens=350,
+    stage1, m1 = _chat(msgs, temperature=temperature, max_tokens=600,
                        model=chosen_model, seed=seed)
     run_meta["stages"]["mutation_summary"] = m1
 
@@ -276,7 +276,7 @@ def reason(
         {"role": "assistant", "content": stage1},
         {"role": "user", "content": mech_user_content},
     ]
-    stage2, m2 = _chat(msgs, temperature=temperature, max_tokens=350,
+    stage2, m2 = _chat(msgs, temperature=temperature, max_tokens=700,
                        model=chosen_model, seed=seed)
     run_meta["stages"]["mechanism"] = m2
 
