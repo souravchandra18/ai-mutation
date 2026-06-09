@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "ai-mutation: a citation-grounded, multi-modal retrieval-augmented pipeline for variant interpretation"
+abstract: >
+  ai-mutation turns a free-text mutation query into an evidence-grounded
+  three-stage biomedical reasoning report. It performs parallel retrieval
+  across nine public knowledge bases, optionally augments the prompt with
+  a UniProt-derived domain map for vision-capable LLMs, and audits every
+  LLM-emitted citation against the retrieved evidence with a
+  deterministic citation-grounding verifier.
+authors:
+  - family-names: "<Author>"
+    given-names: "<Given>"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+keywords:
+  - variant interpretation
+  - retrieval-augmented generation
+  - large language models
+  - hallucination mitigation
+  - precision oncology
+  - bioinformatics
+license: MIT
+repository-code: "https://github.com/<owner>/ai-mutation"
+version: "0.1.0"
+date-released: "2026-05-26"

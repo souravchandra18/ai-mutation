@@ -1,0 +1,176 @@
+# Input Examples for Every Supported Type
+
+Use any of these with the CLI, REST API, or Streamlit UI.
+
+```bash
+python -m src.cli analyze "<example>"
+python -m src.cli evidence "<example>"      # no LLM call
+```
+
+## 1. Missense (single AA substitution)
+```
+BRAF V600E
+BRAF p.V600E
+BRAF p.Val600Glu
+EGFR L858R
+EGFR p.Leu858Arg
+TP53 R175H
+TP53 p.Arg175His
+KRAS G12D
+KRAS p.Gly12Asp
+PIK3CA H1047R
+IDH1 R132H
+```
+
+## 2. Nonsense (stop-gained)
+```
+TP53 R213*
+TP53 R213X
+TP53 p.Arg213Ter
+APC R1450*
+APC p.Arg1450Ter
+BRCA2 K3326*
+```
+
+## 3. Synonymous (silent)
+```
+TP53 V157=
+BRAF p.Val600=
+```
+
+## 4. Frameshift
+```
+BRCA1 K45fs
+BRCA1 K45Rfs*4
+BRCA1 p.Lys45ArgfsTer4
+APC E1309fs
+PTEN R130fs*4
+```
+
+## 5. In-frame deletion
+```
+EGFR L747_E749del
+EGFR p.Leu747_Glu749del
+EGFR E746_A750del
+KIT V560del
+```
+
+## 6. In-frame insertion
+```
+EGFR D770_N771insSVD
+EGFR p.Asp770_Asn771insSerValAsp
+ERBB2 A775_G776insYVMA
+```
+
+## 7. In-frame duplication
+```
+EGFR Y772_A775dup
+EGFR p.Tyr772_Ala775dup
+FLT3 ITD
+KMT2A p.Met1dup
+```
+
+## 8. Splice-site (bare HGVS coding)
+```
+BRCA1 c.5074+1G>A
+BRCA2 c.68-7T>A
+MET c.3028+1G>T
+ATM c.1898+2T>G
+```
+
+## 9. Exon skipping
+```
+MET exon14skip
+MET ex14skip
+MET exon 14 skipping
+EGFR exon19skip
+```
+
+## 10. Gene fusion (both partners fetched)
+```
+BCR::ABL1
+BCR-ABL1
+EML4::ALK
+EML4-ALK
+TMPRSS2::ERG
+KMT2A::MLLT3
+NPM1-ALK
+PML::RARA
+```
+
+## 11. Copy-number amplification
+```
+HER2 amplification
+ERBB2 amplification
+HER2 amp
+MYC gain
+MET amplified
+```
+
+## 12. Copy-number deletion / loss
+```
+CDKN2A deletion
+PTEN loss
+RB1 deletion
+CDKN2A homozygous deletion
+BRCA1 cnv-del
+```
+
+## 13. Full HGVS (transcript-prefixed)
+```
+NM_004333.6:c.1799T>A         # BRAF V600E in HGVS
+NM_005228.5:c.2573T>G         # EGFR L858R
+NM_007294.3:c.5266dupC        # BRCA1 frameshift
+NM_000546.6:c.524G>A          # TP53 R175H
+NM_000314.8:c.388C>T          # PTEN R130*
+NM_004985.5:c.35G>A           # KRAS G12D
+```
+
+## 14. dbSNP rsID
+```
+rs113488022     # BRAF V600E
+rs121913529     # KRAS G12D
+rs28934578      # TP53 R175H
+rs397507444     # EGFR L858R
+rs199473667     # MET exon 14
+```
+
+## 15. Gene-only fallback
+```
+TP53
+BRAF
+EGFR
+KRAS
+BRCA1
+```
+
+## 16. Compound (semicolon-separated)
+```
+BRAF V600E;K601E
+BRAF V600E; BRAF K601E
+TP53 R175H; R248Q; R273H
+EGFR L858R; T790M
+EGFR L858R; EGFR T790M; EGFR C797S
+KRAS G12D; TP53 R175H
+```
+
+---
+
+### Quick verification
+
+```bash
+# Fast (no LLM)
+python -m src.cli evidence "EGFR p.Leu858Arg"
+python -m src.cli evidence "BRCA1 c.5074+1G>A"
+python -m src.cli evidence "BCR::ABL1"
+python -m src.cli evidence "EGFR L858R; T790M"
+
+# Full pipeline (uses NVIDIA_API_KEY)
+python -m src.cli analyze "BRAF V600E"
+python -m src.cli analyze "HER2 amplification" --md her2.md
+python -m src.cli analyze "MET exon14skip" --model nvidia/llama-3.1-nemotron-70b-instruct
+```
+
+The parser normalises everything to a canonical form before fetching evidence: `p.Val600Glu` → `V600E`, `HER2` → `ERBB2`, `EML4-ALK` → `EML4::ALK fusion`, etc.
+
+Updated todo list

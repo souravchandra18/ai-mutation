@@ -1,0 +1,23 @@
+{
+  "title": "ai-mutation: a citation-grounded, multi-modal retrieval-augmented pipeline for variant interpretation",
+  "description": "Open-source Python application that turns a free-text mutation query into an evidence-grounded three-stage reasoning report, with a deterministic citation-grounding verifier that flags fabricated PubMed / CIViC / UniProt identifiers and computes a Citation-Grounding Score.",
+  "creators": [
+    {
+      "name": "<Author>",
+      "affiliation": "<Affiliation>",
+      "orcid": "0000-0000-0000-0000"
+    }
+  ],
+  "keywords": [
+    "variant interpretation",
+    "retrieval-augmented generation",
+    "large language models",
+    "hallucination mitigation",
+    "precision oncology",
+    "bioinformatics",
+    "multi-modal"
+  ],
+  "license": "MIT",
+  "upload_type": "software",
+  "access_right": "open"
+}
