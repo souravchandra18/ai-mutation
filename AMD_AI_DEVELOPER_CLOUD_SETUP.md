@@ -372,6 +372,7 @@ Optional: install audio decoding helpers if your voice clips are not
 already PCM `.wav`:
 
 ```bash
+sudo apt install -y ffmpeg
 pip install soundfile librosa
 ```
 

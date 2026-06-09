@@ -118,6 +118,13 @@ with st.expander("🔬 Multimodal inputs (optional)", expanded=False):
         "Voice note", type=["wav", "mp3", "m4a", "flac", "ogg"],
         help="Transcribed by Whisper. The transcript is appended to the user prompt.",
     )
+    selected_uploads = []
+    if uploaded_image is not None:
+        selected_uploads.append(f"image: `{uploaded_image.name}` ({uploaded_image.size} bytes)")
+    if uploaded_voice is not None:
+        selected_uploads.append(f"voice: `{uploaded_voice.name}` ({uploaded_voice.size} bytes)")
+    if selected_uploads:
+        st.caption("Selected uploads: " + "; ".join(selected_uploads))
 
 col_a, col_b = st.columns([1, 1])
 do_analyze = col_a.button("Analyze (full reasoning)", type="primary", disabled=not mutation.strip())
@@ -248,7 +255,15 @@ def _therapy_signal_label(evidence: dict) -> str:
     return "; ".join(bits) if bits else "no direct therapy records found"
 
 
-def _render_at_a_glance(label: str, mutation_data: dict, evidence: dict, run: dict) -> None:
+def _render_at_a_glance(
+    label: str,
+    mutation_data: dict,
+    evidence: dict,
+    run: dict,
+    *,
+    image_uploaded: bool = False,
+    voice_uploaded: bool = False,
+) -> None:
     st.markdown("**At A Glance**")
     rows = [
         ("Parsed variant", label),
@@ -258,8 +273,8 @@ def _render_at_a_glance(label: str, mutation_data: dict, evidence: dict, run: di
         ("Population frequency", _gnomad_label(evidence)),
         ("Structural context", _structure_label(evidence)),
         ("ESM-2 ΔPLL", _esm2_label(evidence)),
-        ("Image findings", _imaging_label(evidence)),
-        ("Voice note", _speech_label(evidence)),
+        ("Image findings", _imaging_label(evidence, uploaded=image_uploaded)),
+        ("Voice note", _speech_label(evidence, uploaded=voice_uploaded)),
         ("Therapy signal", _therapy_signal_label(evidence)),
         ("Model", run.get("model") or "not reported"),
     ]
@@ -273,17 +288,28 @@ def _esm2_label(evidence: dict) -> str:
     return f"{esm.get('delta_pll')} ({esm.get('classification')})"
 
 
-def _imaging_label(evidence: dict) -> str:
+def _imaging_label(evidence: dict, *, uploaded: bool = False) -> str:
     img = evidence.get("imaging") or {}
+    if uploaded and not img:
+        return "image uploaded, but backend returned no imaging block"
     if not img.get("found"):
-        return img.get("reason") or "none uploaded"
+        if img.get("reason"):
+            details = [img["reason"]]
+            if img.get("biomedclip_error"):
+                details.append(f"BiomedCLIP: {img['biomedclip_error']}")
+            if img.get("clip_error"):
+                details.append(f"CLIP: {img['clip_error']}")
+            return " | ".join(details)
+        return img.get("error") or "none uploaded"
     return img.get("summary") or "image scored"
 
 
-def _speech_label(evidence: dict) -> str:
+def _speech_label(evidence: dict, *, uploaded: bool = False) -> str:
     sp = evidence.get("speech") or {}
+    if uploaded and not sp:
+        return "voice uploaded, but backend returned no speech block"
     if not sp.get("found"):
-        return sp.get("reason") or "none uploaded"
+        return sp.get("reason") or sp.get("error") or "none uploaded"
     transcript = (sp.get("transcript") or "").strip()
     return (transcript[:80] + "…") if len(transcript) > 80 else transcript
 
@@ -444,7 +470,23 @@ if do_analyze:
     evidence = data.get("evidence") or {}
     grounding = data.get("grounding") or {}
     run = data.get("run") or {}
-    _render_at_a_glance(label, data.get("mutation") or {}, evidence, run)
+    _render_at_a_glance(
+        label,
+        data.get("mutation") or {},
+        evidence,
+        run,
+        image_uploaded=uploaded_image is not None,
+        voice_uploaded=uploaded_voice is not None,
+    )
+    uploads = run.get("uploads") or {}
+    if uploads:
+        st.caption(
+            "Backend received uploads: "
+            f"image={uploads.get('image_received')} "
+            f"({uploads.get('image_bytes', 0)} bytes), "
+            f"voice={uploads.get('voice_received')} "
+            f"({uploads.get('voice_bytes', 0)} bytes)"
+        )
     _render_grounding_metrics(grounding)
 
     with st.expander("Raw evidence (JSON)", expanded=False):

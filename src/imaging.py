@@ -61,39 +61,39 @@ TOP_K = int(os.getenv("IMAGING_TOP_K", "5"))
 
 
 @lru_cache(maxsize=1)
-def _load_biomedclip() -> tuple[Any, Any, Any, Any] | None:
-    """Try to load BiomedCLIP via open_clip. Returns (model, preprocess, tokenizer, device)."""
+def _load_biomedclip() -> tuple[Any, Any, Any, Any] | dict[str, str]:
+    """Try to load BiomedCLIP via open_clip. Returns loaded objects or an error."""
     try:
         import torch  # type: ignore
         import open_clip  # type: ignore
-    except Exception:  # noqa: BLE001
-        return None
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"BiomedCLIP import failed: {e}"}
     try:
         model, _, preprocess = open_clip.create_model_and_transforms(BIOMEDCLIP_MODEL)
         tokenizer = open_clip.get_tokenizer(BIOMEDCLIP_MODEL)
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model = model.to(device).eval()
         return model, preprocess, tokenizer, device
-    except Exception:  # noqa: BLE001
-        return None
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"BiomedCLIP load failed: {e}"}
 
 
 @lru_cache(maxsize=1)
-def _load_clip_fallback() -> tuple[Any, Any, Any] | None:
-    """Generic OpenAI CLIP via transformers. Returns (model, processor, device)."""
+def _load_clip_fallback() -> tuple[Any, Any, Any] | dict[str, str]:
+    """Generic OpenAI CLIP via transformers. Returns loaded objects or an error."""
     try:
         import torch  # type: ignore
         from transformers import CLIPModel, CLIPProcessor  # type: ignore
-    except Exception:  # noqa: BLE001
-        return None
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"CLIP import failed: {e}"}
     try:
         model = CLIPModel.from_pretrained(CLIP_FALLBACK)
         processor = CLIPProcessor.from_pretrained(CLIP_FALLBACK)
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model = model.to(device).eval()
         return model, processor, device
-    except Exception:  # noqa: BLE001
-        return None
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"CLIP load failed: {e}"}
 
 
 def _open_image(image: Any) -> Any | None:
@@ -116,12 +116,12 @@ def _open_image(image: Any) -> Any | None:
 
 
 def _encode_with_biomedclip(pil_image: Any, labels: tuple[str, ...]) -> dict[str, Any]:
-    import torch  # type: ignore
-
     loaded = _load_biomedclip()
-    if loaded is None:
-        return {"found": False, "reason": "open_clip / BiomedCLIP unavailable"}
+    if isinstance(loaded, dict):
+        return {"found": False, "reason": loaded["error"]}
     model, preprocess, tokenizer, device = loaded
+
+    import torch  # type: ignore
 
     image = preprocess(pil_image).unsqueeze(0).to(device)
     text = tokenizer(list(labels)).to(device)
@@ -138,13 +138,12 @@ def _encode_with_biomedclip(pil_image: Any, labels: tuple[str, ...]) -> dict[str
 
 
 def _encode_with_clip(pil_image: Any, labels: tuple[str, ...]) -> dict[str, Any]:
-    import torch  # type: ignore
-
     loaded = _load_clip_fallback()
-    if loaded is None:
-        return {"found": False,
-                "reason": "transformers CLIP unavailable — `pip install transformers`"}
+    if isinstance(loaded, dict):
+        return {"found": False, "reason": loaded["error"]}
     model, processor, device = loaded
+
+    import torch  # type: ignore
 
     inputs = processor(text=list(labels), images=pil_image,
                        return_tensors="pt", padding=True).to(device)
@@ -187,8 +186,17 @@ def encode_image(image: Any,
         return {"found": False, "reason": "could not open image (Pillow missing or bad input)"}
     label_tuple: tuple[str, ...] = tuple(labels) if labels else DEFAULT_LABELS
 
-    # Prefer BiomedCLIP; fall back to generic CLIP.
-    out = _encode_with_biomedclip(pil, label_tuple)
-    if out.get("found"):
-        return out
-    return _encode_with_clip(pil, label_tuple)
+    # Prefer BiomedCLIP; fall back to generic CLIP while preserving diagnostics.
+    biomed = _encode_with_biomedclip(pil, label_tuple)
+    if biomed.get("found"):
+        return biomed
+    clip = _encode_with_clip(pil, label_tuple)
+    if clip.get("found"):
+        clip["fallback_reason"] = biomed.get("reason")
+        return clip
+    return {
+        "found": False,
+        "reason": "No image encoder available.",
+        "biomedclip_error": biomed.get("reason"),
+        "clip_error": clip.get("reason"),
+    }

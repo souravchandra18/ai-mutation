@@ -20,12 +20,12 @@ ENABLED = os.getenv("WHISPER_ENABLED", "1") != "0"
 
 
 @lru_cache(maxsize=1)
-def _load_pipeline() -> Any | None:
+def _load_pipeline() -> Any | dict[str, str]:
     try:
         import torch  # type: ignore
         from transformers import pipeline  # type: ignore
-    except Exception:  # noqa: BLE001
-        return None
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"Whisper import failed: {e}"}
     try:
         device = 0 if torch.cuda.is_available() else -1
         return pipeline(
@@ -33,8 +33,8 @@ def _load_pipeline() -> Any | None:
             model=DEFAULT_MODEL,
             device=device,
         )
-    except Exception:  # noqa: BLE001
-        return None
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"Whisper pipeline load failed: {e}"}
 
 
 def _coerce_input(audio: Any) -> Any:
@@ -60,13 +60,10 @@ def transcribe(audio: Any) -> dict[str, Any]:
         return {"found": False, "reason": "WHISPER_ENABLED=0"}
 
     asr = _load_pipeline()
-    if asr is None:
+    if isinstance(asr, dict):
         return {
             "found": False,
-            "reason": (
-                "transformers/torch unavailable — install with "
-                "`pip install transformers torch torchaudio`."
-            ),
+            "reason": asr["error"],
         }
     try:
         payload = _coerce_input(audio)

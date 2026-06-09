@@ -5,6 +5,8 @@ Run:
 """
 from __future__ import annotations
 
+import sys
+import shutil
 from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -68,9 +70,33 @@ class AnalyzeResponse(BaseModel):
     run: dict[str, Any] = Field(default_factory=dict)
 
 
+def _optional_dependency_status() -> dict[str, str]:
+    status: dict[str, str] = {}
+    for module_name in ("torch", "transformers", "PIL", "open_clip", "torchaudio"):
+        try:
+            module = __import__(module_name)
+            status[module_name] = str(getattr(module, "__version__", "installed"))
+        except Exception as e:  # noqa: BLE001
+            status[module_name] = f"unavailable: {e}"
+    try:
+        import torch  # type: ignore
+
+        status["torch.cuda_available"] = str(torch.cuda.is_available())
+        if torch.cuda.is_available():
+            status["torch.cuda_device"] = torch.cuda.get_device_name(0)
+    except Exception as e:  # noqa: BLE001
+        status["torch.cuda_available"] = f"unavailable: {e}"
+    status["ffmpeg"] = shutil.which("ffmpeg") or "unavailable"
+    return status
+
+
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "python": sys.executable,
+        "optional_dependencies": _optional_dependency_status(),
+    }
 
 
 @app.post("/evidence")
@@ -143,6 +169,15 @@ async def analyze_multimodal_endpoint(
         raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"LLM reasoning failed: {e}") from e
+
+    result.run["uploads"] = {
+        "image_received": image is not None,
+        "image_filename": image.filename if image is not None else None,
+        "image_bytes": len(image_bytes or b""),
+        "voice_received": voice is not None,
+        "voice_filename": voice.filename if voice is not None else None,
+        "voice_bytes": len(voice_bytes or b""),
+    }
 
     return AnalyzeResponse(
         mutation=ev.query,
