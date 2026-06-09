@@ -27,7 +27,7 @@ echo "Starting vLLM on AMD ROCm"
 echo "  model: ${MODEL_ID}"
 echo "  url:   http://localhost:${VLLM_HOST_PORT}/v1"
 echo "  mode:  ${VLLM_BACKEND}"
-echo "  args:  ${VLLM_ARGS}"
+#echo "  args:  ${VLLM_ARGS}"
 
 docker_available() {
   command -v docker >/dev/null 2>&1 && sudo docker info >/dev/null 2>&1
