@@ -1,0 +1,46 @@
+
+pip install --ignore-installed -r requirements.txt
+
+
+
+python3 -m pip uninstall -y fastapi starlette pydantic pydantic-core websockets
+
+rm -rf /usr/local/lib/python3.12/dist-packages/fastapi \
+  /usr/local/lib/python3.12/dist-packages/fastapi-*.dist-info \
+  /usr/local/lib/python3.12/dist-packages/starlette \
+  /usr/local/lib/python3.12/dist-packages/starlette-*.dist-info \
+  /usr/local/lib/python3.12/dist-packages/pydantic \
+  /usr/local/lib/python3.12/dist-packages/pydantic-*.dist-info \
+  /usr/local/lib/python3.12/dist-packages/pydantic_core \
+  /usr/local/lib/python3.12/dist-packages/pydantic_core-*.dist-info \
+  /usr/local/lib/python3.12/dist-packages/websockets \
+  /usr/local/lib/python3.12/dist-packages/websockets-*.dist-info
+
+python3 -m pip install --upgrade --force-reinstall \
+  'fastapi>=0.111,<0.116' 'starlette>=0.37.2,<1.0' \
+  'pydantic>=2.7,<=2.12.3' 'websockets>=13,<16'
+
+
+
+
+python3 -m pip check
+vllm --help >/tmp/vllm-help.txt && echo "vLLM import OK"
+
+
+sudo apt update
+sudo apt install npm
+npm install localtunnel
+
+python -m pip install soundfile librosa
+
+
+
+bash scripts/start_vllm.sh
+
+while running backend, we have to do it from .venv
+sudo apt install -y ffmpeg
+python -m pip install open_clip_torch soundfile librosa
+bash scripts/start_backend.sh
+
+
+bash scripts/start_ui.sh
