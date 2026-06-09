@@ -65,7 +65,7 @@ echo "Using UI framework: ${UI_FRAMEWORK}"
 if [[ "$UI_FRAMEWORK" == "streamlit" ]]; then
   echo "Starting Streamlit UI (legacy)"
   print_access_urls "$UI_PORT"
-  exec streamlit run src/app.py --server.address "$UI_HOST" --server.port "$UI_PORT"
+  exec streamlit run src/app.py --server.address "$UI_HOST" --server.port "$UI_PORT" --server.headless true &> logfile.log & npx localtunnel --port "$UI_PORT"
 else
   if [[ ! -f src/gradio_app.py ]]; then
     echo "Gradio UI file not found: ${ROOT_DIR}/src/gradio_app.py"
