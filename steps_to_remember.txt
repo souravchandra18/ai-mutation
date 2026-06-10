@@ -1,4 +1,8 @@
+Open 3 Terminals --->>>
 
+Terminal 1-->>
+
+python -m pip install --upgrade pip
 pip install --ignore-installed -r requirements.txt
 
 
@@ -27,20 +31,78 @@ python3 -m pip check
 vllm --help >/tmp/vllm-help.txt && echo "vLLM import OK"
 
 
+touch .env
+# or directly write content:
+cat > .env << 'EOF'
+AI_PROVIDER=amd
+AI_API_STYLE=openai
+AI_BASE_URL=http://localhost:8090/v1
+AI_API_KEY=
+#AI_MODEL=Qwen/Qwen2.5-14B-Instruct
+AI_MODEL=Qwen/Qwen2.5-VL-7B-Instruct
+AI_VISION_MODEL=Qwen/Qwen2.5-VL-7B-Instruct
+
+# vLLM startup mode for scripts/start_vllm.sh:
+#   auto   = use Docker if available, otherwise Python vLLM
+#   docker = force Docker
+#   python = force python -m vllm...
+VLLM_BACKEND=auto
+
+# Keep vLLM from reserving the whole GPU and avoid Qwen2.5-VL's 128k default
+# context unless you explicitly need it.
+VLLM_ARGS="--gpu-memory-utilization 0.70 --max-model-len 16384"
+# Use CK flash attention instead of Triton for better ROCm support
+VLLM_USE_TRITON_FLASH_ATTN=0
+
+# Optional: NCBI E-utilities - set your email per NCBI policy
+NCBI_EMAIL=you@example.com
+NCBI_API_KEY=
+
+# UI startup mode for scripts/start_ui.sh:
+#   gradio    = primary UI for AMD AI Developer Cloud
+#   streamlit = legacy local UI
+UI_FRAMEWORK=streamlit
+
+# UI -> FastAPI URL
+BACKEND_URL=http://localhost:8000
+
+# --- Multi-modal specialist models (optional) ---
+# ESM-2 protein language model (zero-shot variant-effect score):
+ESM2_MODEL=facebook/esm2_t33_650M_UR50D
+ESM2_ENABLED=1
+# BiomedCLIP / CLIP image encoder:
+BIOMEDCLIP_MODEL=hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224
+CLIP_FALLBACK=openai/clip-vit-base-patch32
+IMAGING_TOP_K=5
+# Whisper speech transcription:
+WHISPER_MODEL=openai/whisper-base
+WHISPER_ENABLED=1
+# Structural plots (1 = on, 0 = off):
+STRUCTURE_DOMAIN_PLOT=1
+STRUCTURE_3D_PLOT=1
+EOF
+
+cp .env .env.example
+
+If using localtunnel --->>>
 sudo apt update
 sudo apt install npm
 npm install localtunnel
 
-python -m pip install soundfile librosa
-
-
 
 bash scripts/start_vllm.sh
 
+
+Terminal 2-->>
+
 while running backend, we have to do it from .venv
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+sudo apt update
 sudo apt install -y ffmpeg
 python -m pip install open_clip_torch soundfile librosa
 bash scripts/start_backend.sh
 
-
+Terminal 3-->>
 bash scripts/start_ui.sh
